@@ -168,6 +168,13 @@ public class NaiveAgent implements Runnable {
                     }
                     ABObject pig = pigs.get(min);
 
+		    //-->Printing all the blocks in the blocklist for Assignment 2<--
+                    System.out.println("All Blocks here :");
+                    int count = 1;
+                    for(Block b : vision.getBlocks()){
+                        System.out.println("S.no - " + count++ + ": "+b.blockNumber+" "+b.blockMaterial+" "+b.blockShape);
+                    }
+                    
                     Point _tpt = pig.getCenter();// if the target is very close to before, randomly choose a
 					// point near it
 					if (prevTarget != null && distance(prevTarget, _tpt) < 10) {
