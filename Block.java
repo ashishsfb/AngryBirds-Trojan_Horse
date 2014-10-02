@@ -2,9 +2,6 @@ package ab.vision;
 
 import java.awt.*;
 
-/**
- * Created by ashish on 28-Sep-14.
- */
 public class Block {
     public int blockNumber;
     public ABShape blockShape;
