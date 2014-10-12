@@ -131,7 +131,7 @@ public class Vision {
     //Creating this method for the assignment 2 : for getting all blocks i.e. ice, wood or stone
     //and their shapes in a single list
     public List<Block> getBlocks() {
-        ArrayList<Block> blocks = new ArrayList<Block>();
+        List<Block> blocks = new ArrayList<Block>();
 
         List<ABObject> l = this.findBlocksRealShape();
         Block b;
@@ -145,4 +145,31 @@ public class Vision {
 
         return blocks;
     }
+
+    //Assignment 4: getting a basic list of all weak points
+    public List<ABObject> getWeakPoints() {
+        List<ABObject> weakPoints = new ArrayList<ABObject>();
+        List<ABObject> blocks = this.findBlocksRealShape();
+
+        //adding circular objects to weak points list
+        for(ABObject o : blocks){
+            if(o.shape == ABShape.Circle){
+                weakPoints.add(o);
+            }
+        }
+
+        //adding all tnts to weak points list
+        weakPoints.addAll(findTNTs());
+        return weakPoints;
+    }
+
+//    public List<WeakPoint> setPriority(List<WeakPoint> abObjs){
+//        List<WeakPoint> wpts = null;
+//        for(ABObject o : abObjs){
+//            if(o.type == ABType.TNT){
+//
+//            }
+//        }
+//        return wpts;
+//    }
 }
