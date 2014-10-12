@@ -25,6 +25,7 @@ import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
+import ab.vision.WeakPoint;
 
 public class NaiveAgent implements Runnable {
 
@@ -143,7 +144,6 @@ public class NaiveAgent implements Runnable {
 
 		// if there is a sling, then play, otherwise just skip.
 		if (sling != null) {
-
 			if (!pigs.isEmpty()) {
 
 				Point releasePoint = null;
@@ -157,25 +157,48 @@ public class NaiveAgent implements Runnable {
 					//ABObject pig = pigs.get(randomGenerator.nextInt(pigs.size()));
 
                     //-->picking the pig with least y<--
-                    System.out.println("The pigs :-");
-                    int min = 0;
-                    int i = 0;
-                    for(i = 0; i < pigs.size(); i++){
-                        System.out.println("Pig "+(i+1)+" :"+pigs.get(i).x+", "+pigs.get(i).y);
-                        if(pigs.get(min).y > pigs.get(i).y){
-                            min = i;
-                        }
-                    }
-                    ABObject pig = pigs.get(min);
+//                    System.out.println("The pigs :-");
+//                    int min = 0;
+//                    int i = 0;
+//                    for(i = 0; i < pigs.size(); i++){
+//                        System.out.println("Pig "+(i+1)+" :"+pigs.get(i).x+", "+pigs.get(i).y);
+//                        if(pigs.get(min).y > pigs.get(i).y){
+//                            min = i;
+//                        }
+//                    }
+//                    ABObject pig = pigs.get(min);
+//
+//                    -->Printing all the blocks in the blocklist for Assignment 2<--
+//                    System.out.println("All Blocks here :");
+//                    int count = 1;
+//                    for(Block b : vision.getBlocks()){
+//                        System.out.println("S.no - " + count++ + ": "+b.blockNumber+" "+b.blockMaterial+" "+b.blockShape);
+//                    }
 
-		    //-->Printing all the blocks in the blocklist for Assignment 2<--
-                    System.out.println("All Blocks here :");
-                    int count = 1;
-                    for(Block b : vision.getBlocks()){
-                        System.out.println("S.no - " + count++ + ": "+b.blockNumber+" "+b.blockMaterial+" "+b.blockShape);
+
+                    //Assignment 4: Selecting weakpoints{tnts and circular objects} one by one  and then pigs if not all dead
+                    ABObject weakPt = null;
+                    List<ABObject> weakPoints = vision.getWeakPoints();
+                    Point _tpt = null;
+                    if(!weakPoints.isEmpty()) {
+                        weakPt = weakPoints.get(0);
+                        weakPoints.remove(0);
+                        _tpt = weakPt.getCenter();
                     }
-                    
-                    Point _tpt = pig.getCenter();// if the target is very close to before, randomly choose a
+                    else{
+                        System.out.println("The pigs :-");
+                        int min = 0;
+                        int i = 0;
+                        for(i = 0; i < pigs.size(); i++){
+                            System.out.println("Pig "+(i+1)+" :"+pigs.get(i).x+", "+pigs.get(i).y);
+                            if(pigs.get(min).y > pigs.get(i).y){
+                                min = i;
+                            }
+                        }
+                        ABObject pig = pigs.get(min);
+                        _tpt = pig.getCenter();
+                    }
+//                    Point _tpt = pig.getCenter();// if the target is very close to before, randomly choose a
 					// point near it
 					if (prevTarget != null && distance(prevTarget, _tpt) < 10) {
 						double _angle = randomGenerator.nextDouble() * Math.PI * 2;
