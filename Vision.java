@@ -163,6 +163,34 @@ public class Vision {
         return weakPoints;
     }
 
+    public List<ABObject> belowpigs() {
+        List<ABObject> belowpigs = new ArrayList<ABObject>();
+        List<ABObject> blocks = this.findBlocksRealShape();
+        List<ABObject> pigs = this.findPigsMBR();
+        //adding circular objects to weak points list
+        ABObject ad = new ABObject();
+        for(ABObject p : pigs)
+        {
+            if(p.getCenterY() < 500 )
+            {
+                ad=null;
+                int y= Integer.MAX_VALUE;
+                for(ABObject o : blocks)
+                {
+
+                    if(o.getCenterX() < p.getCenterX() + 5  && o.getCenterX() > p.getCenterX() - 5 && o.type!=ABType.Stone)
+                    {
+                         if(o.getCenterY() <= p.getCenterY() + 10 && o.getCenterY() > p.getCenterY() )
+                            ad=o;
+                    }
+                }
+                if(ad != null)
+                    belowpigs.add(ad);
+            }
+        }//adding all tnts to weak points list
+//        weakPoints.addAll(findTNTs());
+        return belowpigs;
+    }
 //    public List<WeakPoint> setPriority(List<WeakPoint> abObjs){
 //        List<WeakPoint> wpts = null;
 //        for(ABObject o : abObjs){
