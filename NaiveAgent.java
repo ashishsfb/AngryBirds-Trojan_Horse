@@ -25,13 +25,14 @@ import ab.utils.StateUtil;
 import ab.vision.ABObject;
 import ab.vision.GameStateExtractor.GameState;
 import ab.vision.Vision;
-import ab.vision.WeakPoint;
 
 public class NaiveAgent implements Runnable {
 
 	private ActionRobot aRobot;
 	private Random randomGenerator;
 	public int currentLevel = 1;
+    private int closeTargetCounter = 0;
+    private boolean useHighTrajectory = false;
 	public static int time_limit = 12;
 	private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
 	TrajectoryPlanner tp;
@@ -71,6 +72,7 @@ public class NaiveAgent implements Runnable {
 						scores.put(currentLevel, score);
 				}
 				int totalScore = 0;
+                //Printing all level scores
 				for(Integer key: scores.keySet()){
 
 					totalScore += scores.get(key);
@@ -179,8 +181,28 @@ public class NaiveAgent implements Runnable {
                     //Assignment 4: Selecting weakpoints{tnts and circular objects} one by one  and then pigs if not all dead
                     ABObject weakPt = null;
                     List<ABObject> weakPoints = vision.getWeakPoints();
+
+                    //removing useless weak pts
+                    if(!weakPoints.isEmpty()) {
+                        for(int i = 0; i < weakPoints.size(); i++){
+                            int counter = 0;
+                            for(int j = 0; j < pigs.size(); j++){
+                                if(weakPoints.get(i).x > pigs.get(j).x && weakPoints.get(i).y > pigs.get(j).y){
+                                    counter++;
+                                }
+                            }
+                            if(counter == pigs.size()){
+                                weakPoints.remove(i);
+                            }
+                        }
+                    }
+
                     Point _tpt = null;
                     if(!weakPoints.isEmpty()) {
+                        System.out.println("Weak Pts :-");
+                        for(int i = 0; i < weakPoints.size(); i++){
+                            System.out.print((i+1) + ": [" + weakPoints.get(i).x + ", " + weakPoints.get(i).y + "] "+ weakPoints.get(i).type + "\t");
+                        }
                         weakPt = weakPoints.get(0);
                         weakPoints.remove(0);
                         _tpt = weakPt.getCenter();
@@ -200,11 +222,21 @@ public class NaiveAgent implements Runnable {
                     }
 //                    Point _tpt = pig.getCenter();// if the target is very close to before, randomly choose a
 					// point near it
+
 					if (prevTarget != null && distance(prevTarget, _tpt) < 10) {
+                        closeTargetCounter++;
 						double _angle = randomGenerator.nextDouble() * Math.PI * 2;
 						_tpt.x = _tpt.x + (int) (Math.cos(_angle) * 10);
 						_tpt.y = _tpt.y + (int) (Math.sin(_angle) * 10);
-						System.out.println("Randomly changing to " + _tpt);
+						System.out.print("Randomly changing to " + _tpt);
+                        if(closeTargetCounter == 2){
+                            System.out.print(" and using higher trajectory.");
+                            _tpt.x = _tpt.x - 10;
+                            _tpt.y = _tpt.y + 10;
+                            useHighTrajectory = true;
+                            closeTargetCounter = 0;
+                        }
+                        System.out.println();
 					}
 
 					prevTarget = new Point(_tpt.x, _tpt.y);
@@ -238,18 +270,29 @@ public class NaiveAgent implements Runnable {
 //						}
 
                     //-->Selecting the higher trajectory no matter what for Assignment 1<--
-                    if(pts.isEmpty()){
-                        System.out.println("No release point found for the target");
-						System.out.println("Try a shot with 45 degree");
-						releasePoint = tp.findReleasePoint(sling, Math.PI/4);
-                    }
-                    else if(pts.size() == 2){
-                        System.out.println("Selecting the higher route");
-                        releasePoint = pts.get(1);
+                    if(!useHighTrajectory) {
+                        if (pts.isEmpty()) {
+                            System.out.println("No release point found for the target");
+                            System.out.println("Try a shot with 45 degree");
+                            releasePoint = tp.findReleasePoint(sling, Math.PI / 4);
+                        } else if (pts.size() == 2) {
+                            //System.out.println("Selecting the higher route");
+                            //releasePoint = pts.get(1);
+                            System.out.println("Selecting the lower route");
+                            releasePoint = pts.get(0);//selecting lower route instead
+                        } else {
+                            System.out.println("Selecting the only route available : " + pts.get(0).toString());
+                            releasePoint = pts.get(0);
+                        }
                     }
                     else{
-                        System.out.println("Selecting the only route available : "+pts.get(0).toString());
-                        releasePoint = pts.get(0);
+                        if (pts.size() == 2) {
+                            System.out.println("Selecting the higher route");
+                            releasePoint = pts.get(1);
+                        }
+                        else
+                            releasePoint = pts.get(0);
+                        useHighTrajectory = false;
                     }
 
 					// Get the reference point
@@ -270,6 +313,8 @@ public class NaiveAgent implements Runnable {
 						case RedBird:
 							tapInterval = 0; break;               // start of trajectory
 						case YellowBird:
+                            refPoint.y = refPoint.y + 9;
+                            System.out.println("Lowering the yellow brd");
 							tapInterval = 65 + randomGenerator.nextInt(25);break; // 65-90% of the way
 						case WhiteBird:
 							tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
