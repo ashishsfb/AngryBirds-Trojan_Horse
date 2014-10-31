@@ -153,7 +153,7 @@ public class Vision {
 
         //adding circular objects to weak points list
         for(ABObject o : blocks){
-            if(o.shape == ABShape.Circle){
+            if(o.shape == ABShape.Circle && o.type != ABType.Unknown){
                 weakPoints.add(o);
             }
         }
