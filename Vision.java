@@ -7,126 +7,126 @@
  **To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/3.0/ 
  *or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
  *****************************************************************************/
-package ab.vision;
+        package ab.vision;
 
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.List;
+        import java.awt.Point;
+        import java.awt.Rectangle;
+        import java.awt.image.BufferedImage;
+        import java.util.ArrayList;
+        import java.util.List;
 
 public class Vision {
-	private BufferedImage image;
-	private VisionMBR visionMBR = null;
-	private VisionRealShape visionRealShape = null;
-	
-	public Vision(BufferedImage image)
-	{
-		this.image = image;
-	}
-	
-	public List<ABObject> findBirdsMBR()
-	{
-		if (visionMBR == null)
-		{
-			visionMBR = new VisionMBR(image);
-		} 
-		return visionMBR.findBirds();
-			
-	}
-	/**
-	 * @return a list of MBRs of the blocks in the screenshot. Blocks: Stone, Wood, Ice
-	 * */
-	public List<ABObject> findBlocksMBR()
-	{
-		if (visionMBR == null)
-		{
-			visionMBR = new VisionMBR(image);
-		}
-		return visionMBR.findBlocks();
-	}
-	
-	public List<ABObject> findTNTs()
-	{
-		if(visionMBR == null)
-		{
-			visionMBR = new VisionMBR(image);
-		}
-		return visionMBR.findTNTs();
-	}
-	public List<ABObject> findPigsMBR()
-	{
-		if (visionMBR == null)
-		{
-			visionMBR = new VisionMBR(image);
-		}
-		return visionMBR.findPigs();
-	}
-	public List<ABObject> findPigsRealShape()
-	{
-		if(visionRealShape == null)
-		{
-			visionRealShape = new VisionRealShape(image);
-		}
-		
-		return visionRealShape.findPigs();
-	} 
-	public List<ABObject> findBirdsRealShape()
-	{
-		if(visionRealShape == null)
-		{
-			visionRealShape = new VisionRealShape(image);
-		}
-		
-		return visionRealShape.findBirds();
-	}
-	
-	public List<ABObject> findHills()
-	{
-		if(visionRealShape == null)
-		{
-			visionRealShape = new VisionRealShape(image);
-		}
-		
-		return visionRealShape.findHills();
-	} 
-	
-	
-	public Rectangle findSlingshotMBR()
-	{
-		if (visionMBR == null)
-		{
-			visionMBR = new VisionMBR(image);
-		}
-		return visionMBR.findSlingshotMBR();
-	}
-	public List<Point> findTrajPoints()
-	{
-		if (visionMBR == null)
-		{
-			visionMBR = new VisionMBR(image);
-		}
-		return visionMBR.findTrajPoints();
-	}
-	/**
-	 * @return a list of real shapes (represented by Body.java) of the blocks in the screenshot. Blocks: Stone, Wood, Ice 
-	 * */
-	public List<ABObject> findBlocksRealShape()
-	{
-		if(visionRealShape == null)
-		{
-			visionRealShape = new VisionRealShape(image);
-		}
-		List<ABObject> allBlocks = visionRealShape.findObjects();
-		
-		return allBlocks;
-	}
-	public VisionMBR getMBRVision()
-	{
-		if(visionMBR == null)
-			visionMBR = new VisionMBR(image);
-		return visionMBR;
-	}
+    private BufferedImage image;
+    private VisionMBR visionMBR = null;
+    private VisionRealShape visionRealShape = null;
+
+    public Vision(BufferedImage image)
+    {
+        this.image = image;
+    }
+
+    public List<ABObject> findBirdsMBR()
+    {
+        if (visionMBR == null)
+        {
+            visionMBR = new VisionMBR(image);
+        }
+        return visionMBR.findBirds();
+
+    }
+    /**
+     * @return a list of MBRs of the blocks in the screenshot. Blocks: Stone, Wood, Ice
+     * */
+    public List<ABObject> findBlocksMBR()
+    {
+        if (visionMBR == null)
+        {
+            visionMBR = new VisionMBR(image);
+        }
+        return visionMBR.findBlocks();
+    }
+
+    public List<ABObject> findTNTs()
+    {
+        if(visionMBR == null)
+        {
+            visionMBR = new VisionMBR(image);
+        }
+        return visionMBR.findTNTs();
+    }
+    public List<ABObject> findPigsMBR()
+    {
+        if (visionMBR == null)
+        {
+            visionMBR = new VisionMBR(image);
+        }
+        return visionMBR.findPigs();
+    }
+    public List<ABObject> findPigsRealShape()
+    {
+        if(visionRealShape == null)
+        {
+            visionRealShape = new VisionRealShape(image);
+        }
+
+        return visionRealShape.findPigs();
+    }
+    public List<ABObject> findBirdsRealShape()
+    {
+        if(visionRealShape == null)
+        {
+            visionRealShape = new VisionRealShape(image);
+        }
+
+        return visionRealShape.findBirds();
+    }
+
+    public List<ABObject> findHills()
+    {
+        if(visionRealShape == null)
+        {
+            visionRealShape = new VisionRealShape(image);
+        }
+
+        return visionRealShape.findHills();
+    }
+
+
+    public Rectangle findSlingshotMBR()
+    {
+        if (visionMBR == null)
+        {
+            visionMBR = new VisionMBR(image);
+        }
+        return visionMBR.findSlingshotMBR();
+    }
+    public List<Point> findTrajPoints()
+    {
+        if (visionMBR == null)
+        {
+            visionMBR = new VisionMBR(image);
+        }
+        return visionMBR.findTrajPoints();
+    }
+    /**
+     * @return a list of real shapes (represented by Body.java) of the blocks in the screenshot. Blocks: Stone, Wood, Ice
+     * */
+    public List<ABObject> findBlocksRealShape()
+    {
+        if(visionRealShape == null)
+        {
+            visionRealShape = new VisionRealShape(image);
+        }
+        List<ABObject> allBlocks = visionRealShape.findObjects();
+
+        return allBlocks;
+    }
+    public VisionMBR getMBRVision()
+    {
+        if(visionMBR == null)
+            visionMBR = new VisionMBR(image);
+        return visionMBR;
+    }
 
     //Creating this method for the assignment 2 : for getting all blocks i.e. ice, wood or stone
     //and their shapes in a single list
@@ -180,7 +180,7 @@ public class Vision {
 
                     if(o.getCenterX() < p.getCenterX() + 5  && o.getCenterX() > p.getCenterX() - 5 && o.type!=ABType.Stone)
                     {
-                         if(o.getCenterY() <= p.getCenterY() + 10 && o.getCenterY() > p.getCenterY() )
+                        if(o.getCenterY() <= p.getCenterY() + 10 && o.getCenterY() > p.getCenterY() )
                             ad=o;
                     }
                 }
@@ -200,4 +200,21 @@ public class Vision {
 //        }
 //        return wpts;
 //    }
+    public int currentstate()
+    {
+        int k;
+        List<ABObject> l =findPigsMBR() ;
+
+        return l.size();
+    }
+
+    public int currentweekstate()
+    {
+        int k;
+        List<ABObject> l =getWeakPoints() ;
+
+        return l.size();
+    }
+
+
 }
