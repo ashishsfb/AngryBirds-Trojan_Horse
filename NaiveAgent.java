@@ -24,6 +24,7 @@
         import ab.pridictor.memory;
         import ab.utils.StateUtil;
         import ab.vision.ABObject;
+        import ab.vision.ABType;
         import ab.vision.GameStateExtractor.GameState;
         import ab.vision.Vision;
 
@@ -325,6 +326,8 @@ public class NaiveAgent implements Runnable {
 
                     ABObject weakPt = null;
                     List<ABObject> weakPoints = vision.getWeakPoints();
+
+
                     //removing useless weak pts
                     if(!weakPoints.isEmpty()) {
                         for(int i = 0; i < weakPoints.size(); i++){
@@ -343,12 +346,26 @@ public class NaiveAgent implements Runnable {
                     Point _tpt = null;
                     if(!levelLost) {
                         if (!weakPoints.isEmpty()) {
+                            int priorWeakPts[][];
+                            priorWeakPts = givePriorityWeekPoints(weakPoints);
+
                             System.out.println("Weak Pts :-");
                             for (int i = 0; i < weakPoints.size(); i++) {
                                 System.out.print((i + 1) + ": [" + weakPoints.get(i).x + ", " + weakPoints.get(i).y + "] " + weakPoints.get(i).type + "\t");
                             }
-                            weakPt = weakPoints.get(0);
-                            weakPoints.remove(0);
+                            System.out.println("##");
+//                            weakPt = weakPoints.get(0);
+//                            weakPoints.remove(0);
+                            int max = 0;
+                            for(int i = 0; i < weakPoints.size(); i++){
+                                if(max < priorWeakPts[i][1]){
+                                    max = i;
+                                }
+                            }
+                            System.out.println("**");
+                            priorWeakPts[max][1] = 0;
+                            weakPt = weakPoints.get(max);
+                            weakPoints.remove(max);
                             _tpt = weakPt.getCenter();
                             m.whatidid(weakPt);
                         } else {
@@ -369,7 +386,7 @@ public class NaiveAgent implements Runnable {
                     else{
                         System.out.println("Lost d game, trying random weak pts and pigs");
                         List<ABObject> targetList  = new ArrayList<ABObject>();
-                              targetList = rem.get(rem.size()-1).WhatIDid;
+                        targetList = rem.get(rem.size()-1).WhatIDid;
                         System.out.println("Rem List : "+rem.get(rem.size()-1).WhatIDid.size());
                         System.out.println("Target List : "+targetList.size());
                         int z=0,c=0;
@@ -593,6 +610,51 @@ public class NaiveAgent implements Runnable {
              m.ifwin(true);
         }
         return state;
+    }
+
+    public int[][] givePriorityWeekPoints(List<ABObject> weakPoints)
+    {
+        System.out.println("Number of weak points" + weakPoints.size());
+        List<ABObject> priorityList;
+        int[][] target = new int[weakPoints.size()][2];
+        int i = 0;
+        for (ABObject obj : weakPoints)
+        {
+            if(obj.getType() == ABType.Pig|| obj.getType() == ABType.TNT)
+            {
+                target[i][0] = i;
+                target[i][1] = obj.area*10;
+                ++i;
+            }
+            else
+            {
+                target[i][0] = i;
+                target[i][1] = obj.area;
+                ++i;
+            }
+            int [][] obj1 =  new int[weakPoints.size()][2];
+            i=0;
+            int k=0;
+            int count=0;
+            for (i = 0;i<weakPoints.size();++i)
+            {
+                for (k  = 0;k<weakPoints.size();++k) {
+                    System.out.println("#");
+                    System.out.println("i"+i+""+target[i][0]);
+                    System.out.println("k"+k+""+target[k][0]);
+                    if(distance(weakPoints.get(target[i][0]).getCenter(), weakPoints.get(target[k][0]).getCenter())<20)
+                    {
+                        count++;
+                    }
+                }
+                System.out.println("*");
+//                target[i][1] = target[i][1]*count;
+                count=0;
+
+            }
+
+        }
+        return target;
     }
 
     public static void main(String args[]) {
