@@ -160,6 +160,7 @@ public class Vision {
 
         //adding all tnts to weak points list
         weakPoints.addAll(findTNTs());
+        weakPoints.addAll(findPigsMBR());
         return weakPoints;
     }
 
