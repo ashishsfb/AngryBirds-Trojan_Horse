@@ -7,168 +7,251 @@
  **To view a copy of this license, visit http://creativecommons.org/licenses/by-nc-sa/3.0/ 
  *or send a letter to Creative Commons, 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
  *****************************************************************************/
-package ab.demo;
+        package ab.demo;
 
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.image.BufferedImage;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+        import java.awt.Point;
+        import java.awt.Rectangle;
+        import java.awt.image.BufferedImage;
+        import java.util.ArrayList;
+        import java.util.LinkedHashMap;
+        import java.util.List;
+        import java.util.Map;
+        import java.util.Random;
 
-import ab.demo.other.ActionRobot;
-import ab.demo.other.Shot;
-import ab.planner.TrajectoryPlanner;
-import ab.utils.StateUtil;
-import ab.vision.ABObject;
-import ab.vision.GameStateExtractor.GameState;
-import ab.vision.Vision;
+        import ab.demo.other.ActionRobot;
+        import ab.demo.other.Shot;
+        import ab.planner.TrajectoryPlanner;
+        import ab.pridictor.memory;
+        import ab.utils.StateUtil;
+        import ab.vision.ABObject;
+        import ab.vision.GameStateExtractor.GameState;
+        import ab.vision.Vision;
 
 public class NaiveAgent implements Runnable {
-
-	private ActionRobot aRobot;
-	private Random randomGenerator;
-	public int currentLevel = 1;
+    public List<memory> rem=new ArrayList<memory>();
+    private ActionRobot aRobot;
+    private Random randomGenerator;
+    public int currentLevel = 1;
+    public int previousLevel = 0;
     private int closeTargetCounter = 0;
-    private boolean useHighTrajectory = false;
-	public static int time_limit = 12;
-	private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
-	TrajectoryPlanner tp;
-	private boolean firstShot;
-	private Point prevTarget;
-	// a standalone implementation of the Naive Agent
-	public NaiveAgent() {
-		
-		aRobot = new ActionRobot();
-		tp = new TrajectoryPlanner();
-		prevTarget = null;
-		firstShot = true;
-		randomGenerator = new Random();
-		// --- go to the Poached Eggs episode level selection page ---
-		ActionRobot.GoFromMainMenuToLevelSelection();
+    private boolean useHighTrajectory = false, tempTraj = false;
+    public static int time_limit = 12;
+    private Map<Integer,Integer> scores = new LinkedHashMap<Integer,Integer>();
+    TrajectoryPlanner tp;
+    private boolean firstShot;
+    private Point prevTarget;
+    memory m = null;
+    // a standalone implementation of the Naive Agent
+    public NaiveAgent() {
 
-	}
+        aRobot = new ActionRobot();
+        tp = new TrajectoryPlanner();
+        prevTarget = null;
+        firstShot = true;
+        randomGenerator = new Random();
+        // --- go to the Poached Eggs episode level selection page ---
+        ActionRobot.GoFromMainMenuToLevelSelection();
 
-	
-	// run the client
-	public void run() {
+    }
+
+
+    // run the client
+    public void run() {
         int levelCounter = 1;
-		aRobot.loadLevel(currentLevel);
-		while (true) {
-			GameState state = solve();
-			if (state == GameState.WON /*|| levelCounter > 3*/) {
-				try {
-					Thread.sleep(3000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				int score = StateUtil.getScore(ActionRobot.proxy);
-				if(!scores.containsKey(currentLevel))
-					scores.put(currentLevel, score);
-				else
-				{
-					if(scores.get(currentLevel) < score)
-						scores.put(currentLevel, score);
-				}
-				int totalScore = 0;
+        aRobot.loadLevel(currentLevel);
+        int count = 0;//for first level
+        while (true) {
+//            if(previousLevel != currentLevel){
+//                System.out.println("##New level "+currentLevel+", to be precise starts, should store memory state now");
+//                BufferedImage screenshot = ActionRobot.doScreenShot();
+//                Vision v = new Vision(screenshot);
+//                m = new memory(v);
+//                m.id = currentLevel;
+//                previousLevel++;
+//            }
+            if(currentLevel == 1 || rem.size() == 0){
+                count++;
+                if(count == 1) {
+                    System.out.println("##New level " + currentLevel);
+                    BufferedImage screenshot = ActionRobot.doScreenShot();
+                    Vision v = new Vision(screenshot);
+                    m = new memory(v);
+                    m.id = currentLevel;
+                }
+            }
+            GameState state = solve();
+            if (state == GameState.WON /*|| levelCounter > 3*/) {
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                int score = StateUtil.getScore(ActionRobot.proxy);
+                if(!scores.containsKey(currentLevel))
+                    scores.put(currentLevel, score);
+                else
+                {
+                    if(scores.get(currentLevel) < score)
+                        scores.put(currentLevel, score);
+                }
+                int totalScore = 0;
                 //Printing all level scores
-				for(Integer key: scores.keySet()){
+                for(Integer key: scores.keySet()){
 
-					totalScore += scores.get(key);
-					System.out.println(" Level " + key
-							+ " Score: " + scores.get(key) + " ");
-				}
-				System.out.println("Total Score: " + totalScore);
-				aRobot.loadLevel(++currentLevel);
-				// make a new trajectory planner whenever a new level is entered
-				tp = new TrajectoryPlanner();
+                    totalScore += scores.get(key);
+                    System.out.println(" Level " + key
+                            + " Score: " + scores.get(key) + " ");
+                }
+                System.out.println("Total Score: " + totalScore);
+                m.sucess = true;
+                rem.add(m);
+                //proceeding to next level
+                aRobot.loadLevel(++currentLevel);
+                BufferedImage screenshot = ActionRobot.doScreenShot();
+                Vision v = new Vision(screenshot);
+                m = new memory(v);
+                m.id = currentLevel;
 
-				// first shot on this level, try high shot first
-				firstShot = true;
-			} else if (state == GameState.LOST) {
+                //printing current level memory
+                System.out.println("\n*************************");
+                System.out.println("Current Level : "+(currentLevel-1));
+                System.out.println("Memory : "+rem.get(rem.size()-1).id);
+                System.out.println("Passed : "+rem.get(rem.size()-1).sucess);
+                System.out.println("Rem size : "+rem.size());
+                System.out.println("List of targets in order : ");
+                for(int j = 0; j < rem.get(rem.size()-1).WhatIDid.size(); j++){
+                    System.out.println((j+1)+". Type : "+rem.get(rem.size()-1).WhatIDid.get(j).type+"\tx : "+rem.get(rem.size()-1).WhatIDid.get(j).x+"\ty : "+rem.get(rem.size()-1).WhatIDid.get(j).y+"\tHeight : "+rem.get(rem.size()-1).WhatIDid.get(j).height+"\t");
+                }
+                System.out.println("*************************\n");
+
+                System.out.println("\n##New level "+currentLevel);
+                // make a new trajectory planner whenever a new level is entered
+                tp = new TrajectoryPlanner();
+
+                // first shot on this level, try high shot first
+                firstShot = true;
+            } else if (state == GameState.LOST) {
                 levelCounter++;
+
                 if(levelCounter <= 3) {
                     System.out.println("Trying for "+ (levelCounter) +" time.");
                     aRobot.restartLevel();
+                    m.sucess = false;
+                    BufferedImage screenshot = ActionRobot.doScreenShot();
+                    Vision v = new Vision(screenshot);
+                    m = new memory(v);
+                    m.id = currentLevel;
+                    rem.add(m);
+
+                    //printing current level memory
+                    System.out.println("\n*************************");
+                    System.out.println("Current Level : "+currentLevel);
+                    System.out.println("Memory : "+rem.get(rem.size()-1).id);
+                    System.out.println("Passed : "+rem.get(rem.size()-1).sucess);
+                    System.out.println("Rem size : "+rem.size());
+                    System.out.println("List of targets in order : ");
+                    for(int j = 0; j < rem.get(rem.size()-1).WhatIDid.size(); j++){
+                        System.out.println((j+1)+". Type : "+rem.get(rem.size()-1).WhatIDid.get(j).type+"\tx : "+rem.get(rem.size()-1).WhatIDid.get(j).x+"\ty : "+rem.get(rem.size()-1).WhatIDid.get(j).y+"\tHeight : "+rem.get(rem.size()-1).WhatIDid.get(j).height+"\t");
+                    }
+                    System.out.println("*************************\n");
                 }
                 else {
+                    levelCounter = 1;
+                    m.sucess = false;
+                    rem.add(m);
                     aRobot.loadLevel(++currentLevel);
+
+                    BufferedImage screenshot = ActionRobot.doScreenShot();
+                    Vision v = new Vision(screenshot);
+                    m = new memory(v);
+                    m.id = currentLevel;
+
+                    //printing current level memory
+                    System.out.println("\n*************************");
+                    System.out.println("Current Level : "+(currentLevel-1));
+                    System.out.println("Memory : "+rem.get(rem.size()-1).id);
+                    System.out.println("Passed : "+rem.get(rem.size()-1).sucess);
+                    System.out.println("Rem size : "+rem.size());
+                    System.out.println("List of targets in order : ");
+                    for(int j = 0; j < rem.get(rem.size()-1).WhatIDid.size(); j++){
+                        System.out.println((j+1)+". Type : "+rem.get(rem.size()-1).WhatIDid.get(j).type+"\tx : "+rem.get(rem.size()-1).WhatIDid.get(j).x+"\ty : "+rem.get(rem.size()-1).WhatIDid.get(j).y+"\tHeight : "+rem.get(rem.size()-1).WhatIDid.get(j).height+"\t");
+                    }
+                    System.out.println("*************************\n");
                     // make a new trajectory planner whenever a new level is entered
                     tp = new TrajectoryPlanner();
 
                     // first shot on this level, try high shot first
                     firstShot = true;
                 }
-                } else if (state == GameState.LEVEL_SELECTION) {
-				System.out
-				.println("Unexpected level selection page, go to the last current level : "
-						+ currentLevel);
-				aRobot.loadLevel(currentLevel);
-			} else if (state == GameState.MAIN_MENU) {
-				System.out
-				.println("Unexpected main menu page, go to the last current level : "
-						+ currentLevel);
-				ActionRobot.GoFromMainMenuToLevelSelection();
-				aRobot.loadLevel(currentLevel);
-			} else if (state == GameState.EPISODE_MENU) {
-				System.out
-				.println("Unexpected episode menu page, go to the last current level : "
-						+ currentLevel);
-				ActionRobot.GoFromMainMenuToLevelSelection();
-				aRobot.loadLevel(currentLevel);
-			}
+            } else if (state == GameState.LEVEL_SELECTION) {
+                System.out
+                        .println("Unexpected level selection page, go to the last current level : "
+                                + currentLevel);
+                aRobot.loadLevel(currentLevel);
+            } else if (state == GameState.MAIN_MENU) {
+                System.out
+                        .println("Unexpected main menu page, go to the last current level : "
+                                + currentLevel);
+                ActionRobot.GoFromMainMenuToLevelSelection();
+                aRobot.loadLevel(currentLevel);
+            } else if (state == GameState.EPISODE_MENU) {
+                System.out
+                        .println("Unexpected episode menu page, go to the last current level : "
+                                + currentLevel);
+                ActionRobot.GoFromMainMenuToLevelSelection();
+                aRobot.loadLevel(currentLevel);
+            }
 
-		}
+        }
 
-	}
+    }
 
-	private double distance(Point p1, Point p2) {
-		return Math
-				.sqrt((double) ((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y)
-						* (p1.y - p2.y)));
-	}
+    private double distance(Point p1, Point p2) {
+        return Math
+                .sqrt((double) ((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y)
+                        * (p1.y - p2.y)));
+    }
 
-	public GameState solve()
-	{
+    public GameState solve()
+    {
+        // capture Image
+        BufferedImage screenshot = ActionRobot.doScreenShot();
 
-		// capture Image
-		BufferedImage screenshot = ActionRobot.doScreenShot();
+        // process image
+        Vision vision = new Vision(screenshot);
+//        memory m=new memory(vision);
 
-		// process image
-		Vision vision = new Vision(screenshot);
+        // find the slingshot
+        Rectangle sling = vision.findSlingshotMBR();
 
-		// find the slingshot
-		Rectangle sling = vision.findSlingshotMBR();
-
-		// confirm the slingshot
-		while (sling == null && aRobot.getState() == GameState.PLAYING) {
-			System.out
-			.println("No slingshot detected. Please remove pop up or zoom out");
-			ActionRobot.fullyZoomOut();
-			screenshot = ActionRobot.doScreenShot();
-			vision = new Vision(screenshot);
-			sling = vision.findSlingshotMBR();
-		}
+        // confirm the slingshot
+        while (sling == null && aRobot.getState() == GameState.PLAYING) {
+            System.out
+                    .println("No slingshot detected. Please remove pop up or zoom out");
+            ActionRobot.fullyZoomOut();
+            screenshot = ActionRobot.doScreenShot();
+            vision = new Vision(screenshot);
+            sling = vision.findSlingshotMBR();
+        }
         // get all the pigs
- 		List<ABObject> pigs = vision.findPigsMBR();
+        List<ABObject> pigs = vision.findPigsMBR();
 
-		GameState state = aRobot.getState();
+        GameState state = aRobot.getState();
 
-		// if there is a sling, then play, otherwise just skip.
-		if (sling != null) {
-			if (!pigs.isEmpty()) {
+        // if there is a sling, then play, otherwise just skip.
+        if (sling != null) {
+            if (!pigs.isEmpty()) {
 
-				Point releasePoint = null;
-				Shot shot = new Shot();
-				int dx,dy;
-				{
+                Point releasePoint = null;
+                Shot shot = new Shot();
+                int dx,dy;
+                {
                     //-->Assignment 1: Pick a pig that is at largest height
                     // rather than picking'em randomly and select bigger angle
                     // random pick up a pig<--
 
-					//ABObject pig = pigs.get(randomGenerator.nextInt(pigs.size()));
+                    //ABObject pig = pigs.get(randomGenerator.nextInt(pigs.size()));
 
                     //-->picking the pig with least y<--
 //                    System.out.println("The pigs :-");
@@ -191,9 +274,48 @@ public class NaiveAgent implements Runnable {
 
 
                     //Assignment 4: Selecting weakpoints{tnts and circular objects} one by one  and then pigs if not all dead
+                   //Checking the memory for simmiler level
+//                    memory bestmatch=null;
+//                    int maxcount=0;
+//                    for(int i=0;i<rem.size();++i)
+//                    {
+//                        memory tp=rem.get(i);
+//                         int count=0;
+//                           if(tp.NumberofPigs == m.NumberofPigs)
+//                               count++;
+//                            if(tp.NumberofWp==m.NumberofWp)
+//                               count++;
+//                            for(int j=0;j<m.pigs.size();++j)
+//                            {
+//                                for(int k=0;k<m.pigs.size();++k)
+//                                {
+//                                    if(m.pigs.get(k).getHeight() >= tp.pigs.get(j).getHeight()-10 && m.pigs.get(k).getHeight() <= tp.pigs.get(j).getHeight()+10)
+//                                {
+//                                        count++;
+//                                        break;
+//                                }
+//                                }
+//                             }
+//                        if(count>maxcount)
+//                        {     maxcount=count;
+//                            bestmatch=tp;
+//                        }
+//
+//                    }
+//                    if(maxcount >= 2+ m.NumberofPigs)
+//                    {
+//                        if(bestmatch.sucess)
+//                        {
+//                            //follow what you did earlier
+//                        }
+//                        else
+//                        {
+//                            //do something else then what you did earlier
+//                        }
+//                    }
+
                     ABObject weakPt = null;
                     List<ABObject> weakPoints = vision.getWeakPoints();
-
                     //removing useless weak pts
                     if(!weakPoints.isEmpty()) {
                         for(int i = 0; i < weakPoints.size(); i++){
@@ -218,6 +340,7 @@ public class NaiveAgent implements Runnable {
                         weakPt = weakPoints.get(0);
                         weakPoints.remove(0);
                         _tpt = weakPt.getCenter();
+                        m.whatidid(weakPt);
                     }
                     else{
                         System.out.println("The pigs :-");
@@ -231,33 +354,36 @@ public class NaiveAgent implements Runnable {
                         }
                         ABObject pig = pigs.get(min);
                         _tpt = pig.getCenter();
+                        m.whatidid(pig);
                     }
-//                    Point _tpt = pig.getCenter();// if the target is very close to before, randomly choose a
-					// point near it
 
-					if (prevTarget != null && distance(prevTarget, _tpt) < 10) {
+//                    Point _tpt = pig.getCenter();// if the target is very close to before, randomly choose a
+                    // point near it
+
+                    if (prevTarget != null && distance(prevTarget, _tpt) < 10) {
                         closeTargetCounter++;
-						double _angle = randomGenerator.nextDouble() * Math.PI * 2;
-						_tpt.x = _tpt.x + (int) (Math.cos(_angle) * 10);
-						_tpt.y = _tpt.y + (int) (Math.sin(_angle) * 10);
-						System.out.print("Randomly changing to " + _tpt);
+                        double _angle = randomGenerator.nextDouble() * Math.PI * 2;
+                        _tpt.x = _tpt.x + (int) (Math.cos(_angle) * 10);
+                        _tpt.y = _tpt.y + (int) (Math.sin(_angle) * 10);
+                        System.out.print("Randomly changing to " + _tpt);
                         if(closeTargetCounter == 2){
                             System.out.print(" and using higher trajectory.");
                             _tpt.x = _tpt.x - 10;
                             _tpt.y = _tpt.y + 10;
                             useHighTrajectory = true;
+                            tempTraj = true;
                             closeTargetCounter = 0;
                         }
                         System.out.println();
-					}
+                    }
 
-					prevTarget = new Point(_tpt.x, _tpt.y);
+                    prevTarget = new Point(_tpt.x, _tpt.y);
 
-					// estimate the trajectory
-					ArrayList<Point> pts = tp.estimateLaunchPoint(sling, _tpt);
+                    // estimate the trajectory
+                    ArrayList<Point> pts = tp.estimateLaunchPoint(sling, _tpt);
 
                     //-->Commenting this for the 1st Assignment: to choosing higher trajectory<--
-					// do a high shot when entering a level to find an accurate velocity
+                    // do a high shot when entering a level to find an accurate velocity
 //					if (firstShot && pts.size() > 1)
 //					{
 //						releasePoint = pts.get(1);
@@ -302,98 +428,112 @@ public class NaiveAgent implements Runnable {
                             System.out.println("Selecting the higher route");
                             releasePoint = pts.get(1);
                         }
-                        else
-                            releasePoint = pts.get(0);
+                        else {
+                            if (pts.size() != 0)
+                                releasePoint = pts.get(0);
+                        }
                         useHighTrajectory = false;
                     }
 
-					// Get the reference point
-					Point refPoint = tp.getReferencePoint(sling);
+                    // Get the reference point
+                    Point refPoint = tp.getReferencePoint(sling);
 
 
-					//Calculate the tapping time according the bird type 
-					if (releasePoint != null) {
-						double releaseAngle = tp.getReleaseAngle(sling,
-								releasePoint);
-						System.out.println("Release Point: " + releasePoint);
-						System.out.println("Release Angle: "
-								+ Math.toDegrees(releaseAngle));
-						int tapInterval = 0;
-						switch (aRobot.getBirdTypeOnSling()) 
-						{
+                    //Calculate the tapping time according the bird type
+                    if (releasePoint != null) {
+                        double releaseAngle = tp.getReleaseAngle(sling,
+                                releasePoint);
+//                        System.out.println("Release Point: " + releasePoint);
+//                        System.out.println("Release Angle: "
+//                                + Math.toDegrees(releaseAngle));
+                        System.out.println("Target pt : ["+_tpt.x+", "+_tpt.y+"]");
+                        int tapInterval = 0;
+                        switch (aRobot.getBirdTypeOnSling())
+                        {
 
-						case RedBird:
-							tapInterval = 0; break;               // start of trajectory
-						case YellowBird:
-                            refPoint.y = refPoint.y + 9;
-                            System.out.println("Lowering the yellow brd");
-							tapInterval = 65 + randomGenerator.nextInt(25);break; // 65-90% of the way
-						case WhiteBird:
-							tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
-						case BlackBird:
-							tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
-						case BlueBird:
-							tapInterval =  65 + randomGenerator.nextInt(20);break; // 65-85% of the way
-						default:
-							tapInterval =  60;
-						}
+                            case RedBird:
+                                tapInterval = 0; break;               // start of trajectory
+                            case YellowBird:
+                                refPoint.y = refPoint.y + 9;
+                                System.out.println("Lowering the yellow brd");
+                                if(tempTraj) {
+                                    tapInterval = 80 + randomGenerator.nextInt(5);
+                                    System.out.println("tapInterval : "+tapInterval);
+                                    break; // 80-85% of the way
+                                }
+                                else {
+                                    tapInterval = 78 + randomGenerator.nextInt(5);
+                                    System.out.println("*tapInterval : "+tapInterval);
+                                    break; // 78-83% of the way
+                                }
+                            case WhiteBird:
+                                tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
+                            case BlackBird:
+                                tapInterval =  70 + randomGenerator.nextInt(20);break; // 70-90% of the way
+                            case BlueBird:
+                                tapInterval =  65 + randomGenerator.nextInt(15);break; // 65-80% of the way
+                            default:
+                                tapInterval =  60;
+                        }
 
-						int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
-						dx = (int)releasePoint.getX() - refPoint.x;
-						dy = (int)releasePoint.getY() - refPoint.y;
-						shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
-					}
-					else
-						{
-							System.err.println("No Release Point Found");
-							return state;
-						}
-				}
+                        int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
+                        dx = (int)releasePoint.getX() - refPoint.x;
+                        dy = (int)releasePoint.getY() - refPoint.y;
+                        shot = new Shot(refPoint.x, refPoint.y, dx, dy, 0, tapTime);
+                    }
+                    else
+                    {
+                        System.err.println("No Release Point Found");
+                        return state;
+                    }
+                }
 
-				// check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
-				{
-					ActionRobot.fullyZoomOut();
-					screenshot = ActionRobot.doScreenShot();
-					vision = new Vision(screenshot);
-					Rectangle _sling = vision.findSlingshotMBR();
-					if(_sling != null)
-					{
-						double scale_diff = Math.pow((sling.width - _sling.width),2) +  Math.pow((sling.height - _sling.height),2);
-						if(scale_diff < 25)
-						{
-							if(dx < 0)
-							{
-								aRobot.cshoot(shot);
-								state = aRobot.getState();
-								if ( state == GameState.PLAYING )
-								{
-									screenshot = ActionRobot.doScreenShot();
-									vision = new Vision(screenshot);
-									List<Point> traj = vision.findTrajPoints();
-									tp.adjustTrajectory(traj, sling, releasePoint);
-									firstShot = false;
-								}
-							}
-						}
-						else
-							System.out.println("Scale is changed, can not execute the shot, will re-segement the image");
-					}
-					else
-						System.out.println("no sling detected, can not execute the shot, will re-segement the image");
-				}
+                // check whether the slingshot is changed. the change of the slingshot indicates a change in the scale.
+                {
+                    ActionRobot.fullyZoomOut();
+                    screenshot = ActionRobot.doScreenShot();
+                    vision = new Vision(screenshot);
+                    Rectangle _sling = vision.findSlingshotMBR();
+                    if(_sling != null)
+                    {
+                        double scale_diff = Math.pow((sling.width - _sling.width),2) +  Math.pow((sling.height - _sling.height),2);
+                        if(scale_diff < 25)
+                        {
+                            if(dx < 0)
+                            {
+                                aRobot.cshoot(shot);
+                                state = aRobot.getState();
+                                if ( state == GameState.PLAYING )
+                                {
+                                    screenshot = ActionRobot.doScreenShot();
+                                    vision = new Vision(screenshot);
+                                    List<Point> traj = vision.findTrajPoints();
+                                    tp.adjustTrajectory(traj, sling, releasePoint);
+                                    firstShot = false;
+                                }
+                            }
+                        }
+                        else
+                            System.out.println("Scale is changed, can not execute the shot, will re-segement the image");
+                    }
+                    else
+                        System.out.println("no sling detected, can not execute the shot, will re-segement the image");
+                }
 
-			}
+            }
+        else
+             m.ifwin(true);
+        }
+        return state;
+    }
 
-		}
-		return state;
-	}
+    public static void main(String args[]) {
 
-	public static void main(String args[]) {
+        NaiveAgent na = new NaiveAgent();
 
-		NaiveAgent na = new NaiveAgent();
-		if (args.length > 0)
-			na.currentLevel = Integer.parseInt(args[0]);
-		na.run();
+        if (args.length > 0)
+            na.currentLevel = Integer.parseInt(args[0]);
+        na.run();
 
-	}
+    }
 }
