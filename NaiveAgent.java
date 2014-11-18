@@ -40,6 +40,7 @@ public class NaiveAgent implements Runnable {
     TrajectoryPlanner tp;
     private boolean firstShot;
     private Point prevTarget;
+    private boolean levelLost = false;
     memory m = null;
     // a standalone implementation of the Naive Agent
     public NaiveAgent() {
@@ -81,6 +82,7 @@ public class NaiveAgent implements Runnable {
             }
             GameState state = solve();
             if (state == GameState.WON /*|| levelCounter > 3*/) {
+                levelLost = false;
                 try {
                     Thread.sleep(3000);
                 } catch (InterruptedException e) {
@@ -108,6 +110,8 @@ public class NaiveAgent implements Runnable {
                 rem.add(m);
                 //proceeding to next level
                 aRobot.loadLevel(++currentLevel);
+
+                System.out.println("I came back after load new level");
                 BufferedImage screenshot = ActionRobot.doScreenShot();
                 Vision v = new Vision(screenshot);
                 m = new memory(v);
@@ -132,17 +136,21 @@ public class NaiveAgent implements Runnable {
                 // first shot on this level, try high shot first
                 firstShot = true;
             } else if (state == GameState.LOST) {
+                levelLost = true;
                 levelCounter++;
 
                 if(levelCounter <= 3) {
+
                     System.out.println("Trying for "+ (levelCounter) +" time.");
-                    aRobot.restartLevel();
                     m.sucess = false;
+                    rem.add(m);
+                    aRobot.restartLevel();
+                    System.out.println("I came back after restart level");
                     BufferedImage screenshot = ActionRobot.doScreenShot();
                     Vision v = new Vision(screenshot);
                     m = new memory(v);
                     m.id = currentLevel;
-                    rem.add(m);
+//                    rem.add(m);
 
                     //printing current level memory
                     System.out.println("\n*************************");
@@ -160,6 +168,7 @@ public class NaiveAgent implements Runnable {
                     levelCounter = 1;
                     m.sucess = false;
                     rem.add(m);
+                    levelLost=false;
                     aRobot.loadLevel(++currentLevel);
 
                     BufferedImage screenshot = ActionRobot.doScreenShot();
@@ -332,29 +341,87 @@ public class NaiveAgent implements Runnable {
                     }
 
                     Point _tpt = null;
-                    if(!weakPoints.isEmpty()) {
-                        System.out.println("Weak Pts :-");
-                        for(int i = 0; i < weakPoints.size(); i++){
-                            System.out.print((i+1) + ": [" + weakPoints.get(i).x + ", " + weakPoints.get(i).y + "] "+ weakPoints.get(i).type + "\t");
+                    if(!levelLost) {
+                        if (!weakPoints.isEmpty()) {
+                            System.out.println("Weak Pts :-");
+                            for (int i = 0; i < weakPoints.size(); i++) {
+                                System.out.print((i + 1) + ": [" + weakPoints.get(i).x + ", " + weakPoints.get(i).y + "] " + weakPoints.get(i).type + "\t");
+                            }
+                            weakPt = weakPoints.get(0);
+                            weakPoints.remove(0);
+                            _tpt = weakPt.getCenter();
+                            m.whatidid(weakPt);
+                        } else {
+                            System.out.println("The pigs :-");
+                            int min = 0;
+                            int i = 0;
+                            for (i = 0; i < pigs.size(); i++) {
+                                System.out.println("Pig " + (i + 1) + " :" + pigs.get(i).x + ", " + pigs.get(i).y);
+                                if (pigs.get(min).y > pigs.get(i).y) {
+                                    min = i;
+                                }
+                            }
+                            ABObject pig = pigs.get(min);
+                            _tpt = pig.getCenter();
+                            m.whatidid(pig);
                         }
-                        weakPt = weakPoints.get(0);
-                        weakPoints.remove(0);
-                        _tpt = weakPt.getCenter();
-                        m.whatidid(weakPt);
                     }
                     else{
-                        System.out.println("The pigs :-");
-                        int min = 0;
-                        int i = 0;
-                        for(i = 0; i < pigs.size(); i++){
-                            System.out.println("Pig "+(i+1)+" :"+pigs.get(i).x+", "+pigs.get(i).y);
-                            if(pigs.get(min).y > pigs.get(i).y){
-                                min = i;
+                        System.out.println("Lost d game, trying random weak pts and pigs");
+                        List<ABObject> targetList  = new ArrayList<ABObject>();
+                              targetList = rem.get(rem.size()-1).WhatIDid;
+                        System.out.println("Rem List : "+rem.get(rem.size()-1).WhatIDid.size());
+                        System.out.println("Target List : "+targetList.size());
+                        int z=0,c=0;
+                        while(z<targetList.size())
+                        {
+                            for(int y=0;y<weakPoints.size();y++)
+                            {
+                                    if(distance(targetList.get(z).getCenter(),weakPoints.get(y).getCenter())<10)
+                                        c=1;
+                                    if(distance(targetList.get(z).getCenter(),pigs.get(y).getCenter())<10)
+                                        c=1;
+                            }
+                            if(c==0)
+                                targetList.remove(z);
+
+                            z++;
+                        }
+                        if(!targetList.isEmpty()){
+
+                            int target = randomGenerator.nextInt(targetList.size());
+                            _tpt = targetList.get(target).getCenter();
+                            m.WhatIDid.add(targetList.get(target));
+                            targetList.remove(target);
+
+                        }
+                        else
+                        {
+                            if (!weakPoints.isEmpty()) {
+                                System.out.println("Weak Pts :-");
+                                for (int i = 0; i < weakPoints.size(); i++) {
+                                    System.out.print((i + 1) + ": [" + weakPoints.get(i).x + ", " + weakPoints.get(i).y + "] " + weakPoints.get(i).type + "\t");
+                                }
+                                weakPt = weakPoints.get(0);
+                                weakPoints.remove(0);
+                                _tpt = weakPt.getCenter();
+                                m.whatidid(weakPt);
+                            } else {
+                                System.out.println("The pigs :-");
+                                int min = 0;
+                                int i = 0;
+                                for (i = 0; i < pigs.size(); i++) {
+                                    System.out.println("Pig " + (i + 1) + " :" + pigs.get(i).x + ", " + pigs.get(i).y);
+                                    if (pigs.get(min).y > pigs.get(i).y) {
+                                        min = i;
+                                    }
+                                }
+                                ABObject pig = pigs.get(min);
+                                _tpt = pig.getCenter();
+                                m.whatidid(pig);
                             }
                         }
-                        ABObject pig = pigs.get(min);
-                        _tpt = pig.getCenter();
-                        m.whatidid(pig);
+
                     }
 
 //                    Point _tpt = pig.getCenter();// if the target is very close to before, randomly choose a
@@ -476,6 +543,7 @@ public class NaiveAgent implements Runnable {
                                 tapInterval =  60;
                         }
 
+                        m.tapIntervals.add(tapInterval);
                         int tapTime = tp.getTapTime(sling, releasePoint, _tpt, tapInterval);
                         dx = (int)releasePoint.getX() - refPoint.x;
                         dy = (int)releasePoint.getY() - refPoint.y;
